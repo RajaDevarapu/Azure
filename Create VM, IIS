@@ -1,0 +1,64 @@
+In the Cloud Shell on the side of this page, run the following commands to create a username and generate a random password.
+  USERNAME=azureuser
+  PASSWORD=$(openssl rand -base64 32)
+
+Create VM
+  az vm create \
+    --name myVM \
+    --resource-group cac1d049-c480-4ae3-ae63-c1a1d743f93c \
+    --image Win2016Datacenter \
+    --size Standard_DS2_v2 \
+    --location eastus \
+    --admin-username $USERNAME \
+    --admin-password $PASSWORD
+
+When the VM is ready, you see information about it. Here's an example.
+
+    JSON
+
+    {
+      "fqdns": "",
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroup/providers/Microsoft.Compute/virtualMachines/myVM",
+      "location": "eastus",
+      "macAddress": "00-0D-3A-1E-1B-3B",
+      "powerState": "VM running",
+      "privateIpAddress": "10.0.0.5",
+      "publicIpAddress": "104.211.9.245",
+      "resourceGroup": "myResourceGroup",
+      "zones": ""
+    }
+
+Verify your VM is running
+Run the following az vm get-instance-view command to verify that the VM was successfully created and is running.
+
+  az vm get-instance-view \
+    --name myVM \
+    --resource-group cac1d049-c480-4ae3-ae63-c1a1d743f93c \
+    --output table
+
+Configure IIS
+
+  az vm extension set \
+    --resource-group cac1d049-c480-4ae3-ae63-c1a1d743f93c \
+    --vm-name myVM \
+    --name CustomScriptExtension \
+    --publisher Microsoft.Compute \
+    --settings '{"fileUris":["https://raw.githubusercontent.com/MicrosoftDocs/mslearn-welcome-to-azure/master/configure-iis.ps1"]}' \
+    --protected-settings '{"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File configure-iis.ps1"}'
+ 
+ Run this az vm open-port command to open port 80 (HTTP) through the firewall.
+
+    az vm open-port \
+    --name myVM \
+    --resource-group cac1d049-c480-4ae3-ae63-c1a1d743f93c \
+    --port 80
+    
+Verify the configuration
+Now that IIS is set up, let's verify that it's running.
+
+  az vm show \
+    --name myVM \
+    --resource-group cac1d049-c480-4ae3-ae63-c1a1d743f93c \
+    --show-details \
+    --query [publicIps] \
+    --output tsv
